@@ -46,6 +46,7 @@ input, textarea {
   border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; width: 100%;
 }
 textarea { resize: vertical; min-height: 72px; }
+input.pin { letter-spacing: .3em; font-variant-numeric: tabular-nums; max-width: 12rem; }
 input:focus, textarea:focus { outline: 2px solid var(--pen); outline-offset: 1px; border-color: transparent; }
 button.sign {
   font-family: var(--display); font-size: 1.15rem; font-weight: 500;
@@ -91,6 +92,9 @@ li:last-child { border-bottom: 0; }
     </label>
     <label for="note">หมายเหตุ <span class="opt">(ไม่บังคับ)</span>
       <textarea id="note" name="note" maxlength="300" placeholder="เช่น มาสาย 10 นาที, ลากิจ"></textarea>
+    </label>
+    <label for="pin" id="pinField">PIN
+      <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="8" placeholder="ใส่ PIN ที่ได้รับ" class="pin">
     </label>
     <button class="sign" id="btn" type="submit">ลงชื่อ</button>
     <p class="msg" id="msg" role="status" aria-live="polite"></p>
@@ -138,16 +142,16 @@ async function fetchRows() {
   const data = await res.json();
   return Array.isArray(data.rows) ? data.rows : [];
 }
-async function addRow(row) {
+async function addRow(row, pin) {
   if (!shared) {
     const data = loadLocal(); data.push(row);
     if (!saveLocal(data)) throw new Error("storage");
     return;
   }
   // text/plain avoids a CORS preflight, which Apps Script does not answer
-  const res = await fetch(SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "add", ...row }) });
+  const res = await fetch(SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "add", ...row, pin }) });
   const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "save");
+  if (!data.ok) { const err = new Error(data.error || "save"); err.code = data.error; throw err; }
 }
 function removeLocal(id) { saveLocal(loadLocal().filter(r => r.id !== id)); }
 
@@ -203,19 +207,26 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = $("name").value.trim();
   const note = $("note").value.trim();
+  const pin = $("pin").value.trim();
   if (!name) { say("กรุณาพิมพ์ชื่อก่อนกดลงชื่อ", "err"); $("name").focus(); return; }
+  if (shared && !pin) { say("กรุณาใส่ PIN ก่อนกดลงชื่อ", "err"); $("pin").focus(); return; }
   btn.disabled = true; say("กำลังบันทึก…");
   const row = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name, note, at: Date.now() };
   try {
-    await addRow(row);
+    await addRow(row, pin);
     form.reset(); say("ลงชื่อเรียบร้อย ✓ " + name, "ok");
     await refresh();
   } catch (err) {
-    say("บันทึกไม่สำเร็จ ลองกดอีกครั้ง", "err");
+    const code = err && err.code;
+    if (code === "bad_pin") { say("PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง", "err"); $("pin").value = ""; $("pin").focus(); }
+    else if (code === "locked") say("ใส่ PIN ผิดหลายครั้งเกินไป รอประมาณ 10 นาทีแล้วลองใหม่", "err");
+    else if (code === "pin_not_set") say("ยังไม่ได้ตั้ง PIN ติดต่อผู้ดูแล", "err");
+    else say("บันทึกไม่สำเร็จ ลองกดอีกครั้ง", "err");
   } finally { btn.disabled = false; }
 });
 
 if (!shared) {
+  $("pinField").hidden = true;
   notice.hidden = false;
   notice.textContent = "รายชื่อเก็บไว้ในเครื่องนี้เท่านั้น ถ้าต้องการให้ทุกเครื่องเห็นรายชื่อเดียวกัน ให้เชื่อมกับ Google Sheets ตามวิธีใน README";
 }
