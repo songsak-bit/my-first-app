@@ -38,7 +38,7 @@ body { background: var(--paper); color: var(--ink); font-family: var(--body); fo
 header { display: grid; gap: 2px; }
 h1 { font-family: var(--display); font-weight: 500; font-size: 1.6rem; margin: 0; text-wrap: balance; }
 .sub { color: var(--ink-soft); margin: 0; font-size: .95rem; }
-form { background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
 label { display: grid; gap: 6px; font-weight: 600; font-size: .95rem; }
 label span.opt { font-weight: 400; color: var(--ink-soft); }
 input, textarea {
@@ -46,33 +46,37 @@ input, textarea {
   border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; width: 100%;
 }
 textarea { resize: vertical; min-height: 72px; }
-input.pin { letter-spacing: .3em; font-variant-numeric: tabular-nums; max-width: 12rem; }
+input.code { letter-spacing: .4em; font-variant-numeric: tabular-nums; font-size: 22px; max-width: 14rem; }
 input:focus, textarea:focus { outline: 2px solid var(--pen); outline-offset: 1px; border-color: transparent; }
-button.sign {
+button.primary {
   font-family: var(--display); font-size: 1.15rem; font-weight: 500;
   background: var(--pen); color: var(--pen-ink); border: 0; border-radius: 12px;
   padding: 14px; min-height: 52px; cursor: pointer;
 }
-button.sign:disabled { opacity: .55; cursor: default; }
+button.primary:disabled { opacity: .55; cursor: default; }
+button.link { font: inherit; font-size: .92rem; color: var(--pen); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+button.link:disabled { color: var(--ink-soft); text-decoration: none; cursor: default; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+.hint { margin: 0; color: var(--ink-soft); font-size: .92rem; overflow-wrap: anywhere; }
 .msg { margin: 0; font-size: .92rem; min-height: 1.4em; }
 .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+.who-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; font-size: .92rem; color: var(--ink-soft); }
+.who-bar strong { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; }
 .sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--rule); }
 .sheet-head h2 { font-family: var(--display); font-weight: 500; font-size: 1.15rem; margin: 0; }
 .count { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: .95rem; }
 ol { list-style: none; margin: 0; padding: 0; }
-li { display: grid; grid-template-columns: 3rem 1fr auto; align-items: start; border-bottom: 1px solid var(--rule); }
+li { display: grid; grid-template-columns: 4.2rem 1fr; border-bottom: 1px solid var(--rule); }
 li:last-child { border-bottom: 0; }
-.no { text-align: right; padding: 12px 10px 12px 0; color: var(--ink-soft); font-variant-numeric: tabular-nums; border-right: 2px solid var(--margin); align-self: stretch; }
-.who { padding: 10px 12px; min-width: 0; }
-.who .name { font-weight: 600; color: var(--pen); font-size: 1.05rem; overflow-wrap: anywhere; }
-.who .note { font-size: .95rem; overflow-wrap: anywhere; white-space: pre-wrap; }
-.who .time { color: var(--ink-soft); font-size: .8rem; font-variant-numeric: tabular-nums; }
-.del { margin: 8px 8px 0 0; font: inherit; font-size: .85rem; color: var(--ink-soft); background: none; border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
-.del.confirm { color: var(--err); border-color: var(--err); }
+.day { text-align: right; padding: 12px 10px 12px 0; color: var(--ink-soft); font-size: .88rem; line-height: 1.3; font-variant-numeric: tabular-nums; border-right: 2px solid var(--margin); }
+.day b { display: block; color: var(--ink); font-size: 1.05rem; font-weight: 600; }
+.entry { padding: 10px 12px; min-width: 0; }
+.entry .time { color: var(--pen); font-weight: 600; font-variant-numeric: tabular-nums; }
+.entry .name { overflow-wrap: anywhere; }
+.entry .note { color: var(--ink-soft); font-size: .95rem; overflow-wrap: anywhere; white-space: pre-wrap; }
 .empty { display: block; padding: 28px 18px; text-align: center; color: var(--ink-soft); }
-.notice { color: var(--ink-soft); font-size: .88rem; margin: 0; }
 @media (prefers-reduced-motion: no-preference) {
   li.fresh { animation: fade 1.2s ease-out; }
   @keyframes fade { from { background: color-mix(in srgb, var(--pen) 14%, transparent); } to { background: transparent; } }
@@ -83,155 +87,262 @@ li:last-child { border-bottom: 0; }
 <div class="wrap">
   <header>
     <h1>ลงชื่อ</h1>
-    <p class="sub">กรอกชื่อแล้วกด "ลงชื่อ"</p>
+    <p class="sub" id="sub">เข้าสู่ระบบด้วยอีเมลเพื่อลงชื่อและดูประวัติของคุณ</p>
   </header>
 
-  <form id="f" novalidate>
-    <label for="name">ชื่อ
-      <input id="name" name="name" autocomplete="name" maxlength="80" placeholder="ชื่อ - นามสกุล" required>
+  <!-- ขั้นที่ 1: ใส่อีเมล -->
+  <form class="card" id="emailForm" novalidate>
+    <label for="email">อีเมล
+      <input id="email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required>
     </label>
-    <label for="note">หมายเหตุ <span class="opt">(ไม่บังคับ)</span>
-      <textarea id="note" name="note" maxlength="300" placeholder="เช่น มาสาย 10 นาที, ลากิจ"></textarea>
-    </label>
-    <label for="pin" id="pinField">PIN
-      <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="8" placeholder="ใส่ PIN ที่ได้รับ" class="pin">
-    </label>
-    <button class="sign" id="btn" type="submit">ลงชื่อ</button>
-    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    <button class="primary" id="sendBtn" type="submit">ส่งรหัสเข้าสู่ระบบ</button>
+    <p class="msg" id="emailMsg" role="status" aria-live="polite"></p>
   </form>
 
-  <section class="sheet" aria-labelledby="listTitle">
-    <div class="sheet-head">
-      <h2 id="listTitle">รายชื่อผู้ลงชื่อ</h2>
-      <span class="count" id="count">—</span>
+  <!-- ขั้นที่ 2: ใส่รหัส -->
+  <form class="card" id="codeForm" novalidate hidden>
+    <p class="hint">ส่งรหัส 6 หลักไปที่ <strong id="sentTo"></strong> แล้ว (ถ้าไม่เห็น ลองดูในโฟลเดอร์สแปม)</p>
+    <label for="code">รหัส 6 หลัก
+      <input id="code" name="code" class="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="••••••" required>
+    </label>
+    <button class="primary" id="verifyBtn" type="submit">เข้าสู่ระบบ</button>
+    <div class="row">
+      <button class="link" id="resendBtn" type="button">ส่งรหัสใหม่</button>
+      <button class="link" id="changeEmailBtn" type="button">เปลี่ยนอีเมล</button>
     </div>
-    <ol id="list"><li class="empty">กำลังโหลดรายชื่อ…</li></ol>
-  </section>
-  <p class="notice" id="notice" hidden></p>
+    <p class="msg" id="codeMsg" role="status" aria-live="polite"></p>
+  </form>
+
+  <!-- หลังเข้าสู่ระบบ -->
+  <div id="app" hidden style="display:grid; gap:20px">
+    <div class="who-bar">
+      <span>เข้าสู่ระบบเป็น <strong id="meEmail"></strong></span>
+      <button class="link" id="logoutBtn" type="button">ออกจากระบบ</button>
+    </div>
+
+    <form class="card" id="signForm" novalidate>
+      <label for="name">ชื่อ
+        <input id="name" name="name" autocomplete="name" maxlength="80" placeholder="ชื่อ - นามสกุล" required>
+      </label>
+      <label for="note">หมายเหตุ <span class="opt">(ไม่บังคับ)</span>
+        <textarea id="note" name="note" maxlength="300" placeholder="เช่น มาสาย 10 นาที, ลากิจ"></textarea>
+      </label>
+      <button class="primary" id="signBtn" type="submit">ลงชื่อ</button>
+      <p class="msg" id="signMsg" role="status" aria-live="polite"></p>
+    </form>
+
+    <section class="sheet" aria-labelledby="histTitle">
+      <div class="sheet-head">
+        <h2 id="histTitle">ประวัติการลงชื่อของฉัน</h2>
+        <span class="count" id="count">—</span>
+      </div>
+      <ol id="list"><li class="empty">กำลังโหลดประวัติ…</li></ol>
+    </section>
+  </div>
 </div>
 
 <script>
-/*
- * ที่เก็บรายชื่อ
- * - ใส่ URL ของ Google Apps Script (ดู README.md) เพื่อให้ทุกคนเห็นรายชื่อชุดเดียวกัน
- * - ถ้าเว้นว่าง รายชื่อจะเก็บไว้ในเครื่องที่เปิดหน้านี้เท่านั้น
- */
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbw1ScVaIDz7xMdPrmK_-lVjkTdsOqIuSzm1xnbgE1p67pYVEg5TvCmivmxhQdSZUOrUDQ/exec";
-const POLL_MS = 10000;
-const LOCAL_KEY = "attendance-signatures";
+const STORE_KEY = "attendance-session";
+const NAME_KEY = "attendance-name";
 
 const $ = (id) => document.getElementById(id);
-const form = $("f"), btn = $("btn"), msg = $("msg"), list = $("list"), countEl = $("count"), notice = $("notice");
-const shared = SHEET_URL.trim() !== "";
-let rows = [], seen = new Set(), firstLoad = true, pendingDel = null;
+let session = null;          // { token, email }
+let pendingEmail = "";
+let seen = new Set(), firstLoad = true, resendTimer = null;
 
-const fmt = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-function say(text, kind) { msg.textContent = text; msg.className = "msg " + (kind || ""); }
+const dayFmt = new Intl.DateTimeFormat("th-TH", { day: "numeric" });
+const monFmt = new Intl.DateTimeFormat("th-TH", { month: "short" });
+const yearFmt = new Intl.DateTimeFormat("th-TH", { year: "2-digit" });
+const timeFmt = new Intl.DateTimeFormat("th-TH", { hour: "2-digit", minute: "2-digit" });
 
-/* ---------- storage ---------- */
-function loadLocal() {
-  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); } catch (e) { return []; }
-}
-function saveLocal(data) {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); return true; } catch (e) { return false; }
-}
-async function fetchRows() {
-  if (!shared) return loadLocal();
-  const res = await fetch(SHEET_URL + (SHEET_URL.includes("?") ? "&" : "?") + "t=" + Date.now());
-  if (!res.ok) throw new Error("http " + res.status);
-  const data = await res.json();
-  return Array.isArray(data.rows) ? data.rows : [];
-}
-async function addRow(row, pin) {
-  if (!shared) {
-    const data = loadLocal(); data.push(row);
-    if (!saveLocal(data)) throw new Error("storage");
-    return;
-  }
-  // text/plain avoids a CORS preflight, which Apps Script does not answer
-  const res = await fetch(SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "add", ...row, pin }) });
-  const data = await res.json();
-  if (!data.ok) { const err = new Error(data.error || "save"); err.code = data.error; throw err; }
-}
-function removeLocal(id) { saveLocal(loadLocal().filter(r => r.id !== id)); }
+function say(el, text, kind) { el.textContent = text; el.className = "msg " + (kind || ""); }
+function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function save(key, val) { try { val == null ? localStorage.removeItem(key) : localStorage.setItem(key, val); } catch (e) {} }
 
-/* ---------- render ---------- */
-function render() {
-  countEl.textContent = rows.length + " คน";
+async function api(action, payload) {
+  // text/plain ไม่ต้องผ่าน CORS preflight ซึ่ง Apps Script ไม่ตอบ
+  const res = await fetch(SHEET_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  return res.json();
+}
+
+const ERR = {
+  bad_email: "อีเมลไม่ถูกต้อง ตรวจแล้วลองใหม่",
+  email_not_allowed: "อีเมลนี้ไม่ได้รับอนุญาตให้ใช้งาน",
+  wait: "เพิ่งส่งรหัสไป รอ 1 นาทีแล้วค่อยขอใหม่",
+  too_many: "ขอรหัสบ่อยเกินไป รอสักครู่แล้วลองใหม่",
+  mail_quota: "วันนี้ส่งอีเมลครบโควตาแล้ว ติดต่อผู้ดูแล",
+  code_expired: "รหัสหมดอายุหรือใส่ผิดเกินกำหนด กด \"ส่งรหัสใหม่\"",
+};
+
+/* ---------- views ---------- */
+
+function show(view) {
+  $("emailForm").hidden = view !== "email";
+  $("codeForm").hidden = view !== "code";
+  $("app").hidden = view !== "app";
+  $("sub").hidden = view === "app";
+}
+
+function startResendCooldown() {
+  const btn = $("resendBtn");
+  let left = 60;
+  clearInterval(resendTimer);
+  btn.disabled = true;
+  btn.textContent = "ส่งรหัสใหม่ได้ใน " + left + " วิ";
+  resendTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) { clearInterval(resendTimer); btn.disabled = false; btn.textContent = "ส่งรหัสใหม่"; return; }
+    btn.textContent = "ส่งรหัสใหม่ได้ใน " + left + " วิ";
+  }, 1000);
+}
+
+function enterApp() {
+  $("meEmail").textContent = session.email;
+  $("name").value = load(NAME_KEY) || "";
+  show("app");
+  loadHistory();
+}
+
+function signOut(message) {
+  if (session) api("logout", { token: session.token }).catch(() => {});
+  session = null; save(STORE_KEY, null);
+  seen = new Set(); firstLoad = true;
+  $("code").value = "";
+  show("email");
+  if (message) say($("emailMsg"), message, "err");
+}
+
+/* ---------- login ---------- */
+
+async function sendCode(email, msgEl) {
+  say(msgEl, "กำลังส่งรหัส…");
+  try {
+    const r = await api("request_code", { email });
+    if (!r.ok) { say(msgEl, ERR[r.error] || "ส่งรหัสไม่สำเร็จ ลองใหม่อีกครั้ง", "err"); return false; }
+    return true;
+  } catch (e) { say(msgEl, "เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่", "err"); return false; }
+}
+
+$("emailForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say($("emailMsg"), ERR.bad_email, "err"); $("email").focus(); return; }
+  $("sendBtn").disabled = true;
+  const ok = await sendCode(email, $("emailMsg"));
+  $("sendBtn").disabled = false;
+  if (!ok) return;
+  pendingEmail = email;
+  $("sentTo").textContent = email;
+  say($("emailMsg"), ""); say($("codeMsg"), "");
+  show("code"); startResendCooldown(); $("code").focus();
+});
+
+$("resendBtn").addEventListener("click", async () => {
+  if (await sendCode(pendingEmail, $("codeMsg"))) { say($("codeMsg"), "ส่งรหัสใหม่แล้ว", "ok"); startResendCooldown(); }
+});
+
+$("changeEmailBtn").addEventListener("click", () => { $("code").value = ""; show("email"); $("email").focus(); });
+
+$("codeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = $("code").value.trim();
+  if (!/^\d{6}$/.test(code)) { say($("codeMsg"), "ใส่รหัสตัวเลข 6 หลักจากอีเมล", "err"); $("code").focus(); return; }
+  $("verifyBtn").disabled = true; say($("codeMsg"), "กำลังตรวจรหัส…");
+  try {
+    const r = await api("verify_code", { email: pendingEmail, code });
+    if (r.ok) {
+      session = { token: r.token, email: r.email };
+      save(STORE_KEY, JSON.stringify(session));
+      say($("codeMsg"), ""); $("code").value = "";
+      enterApp();
+    } else if (r.error === "bad_code") {
+      say($("codeMsg"), "รหัสไม่ถูกต้อง" + (r.left > 0 ? " ลองได้อีก " + r.left + " ครั้ง" : ""), "err");
+      $("code").select();
+    } else {
+      say($("codeMsg"), ERR[r.error] || "เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง", "err");
+    }
+  } catch (err) { say($("codeMsg"), "เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่", "err"); }
+  finally { $("verifyBtn").disabled = false; }
+});
+
+$("logoutBtn").addEventListener("click", () => signOut());
+
+/* ---------- sign + history ---------- */
+
+function renderHistory(rows) {
+  const list = $("list");
+  $("count").textContent = rows.length + " ครั้ง";
   list.replaceChildren();
   if (!rows.length) {
     const li = document.createElement("li"); li.className = "empty";
-    li.textContent = "ยังไม่มีใครลงชื่อ เป็นคนแรกได้เลย";
+    li.textContent = "ยังไม่มีประวัติ ลงชื่อครั้งแรกได้จากด้านบน";
     list.append(li); return;
   }
-  rows.forEach((r, i) => {
+  const thisYear = new Date().getFullYear();
+  rows.forEach((r) => {
+    const d = new Date(r.at);
     const li = document.createElement("li");
     if (!firstLoad && !seen.has(r.id)) li.className = "fresh";
-    const no = document.createElement("div"); no.className = "no"; no.textContent = i + 1;
-    const who = document.createElement("div"); who.className = "who";
-    const n = document.createElement("div"); n.className = "name"; n.textContent = r.name || ""; who.append(n);
-    if (r.note) { const t = document.createElement("div"); t.className = "note"; t.textContent = r.note; who.append(t); }
-    const tm = document.createElement("div"); tm.className = "time";
-    tm.textContent = r.at ? fmt.format(new Date(r.at)) : ""; who.append(tm);
-    li.append(no, who);
-    if (!shared) {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "del" + (pendingDel === r.id ? " confirm" : "");
-      b.textContent = pendingDel === r.id ? "ยืนยันลบ" : "ลบ";
-      b.addEventListener("click", () => onDelete(r.id));
-      li.append(b);
-    } else {
-      li.append(document.createElement("span"));
-    }
+    const day = document.createElement("div"); day.className = "day";
+    const b = document.createElement("b"); b.textContent = dayFmt.format(d);
+    day.append(b, monFmt.format(d) + (d.getFullYear() !== thisYear ? " " + yearFmt.format(d) : ""));
+    const entry = document.createElement("div"); entry.className = "entry";
+    const t = document.createElement("div"); t.className = "time"; t.textContent = timeFmt.format(d) + " น.";
+    const n = document.createElement("div"); n.className = "name"; n.textContent = r.name;
+    entry.append(t, n);
+    if (r.note) { const nt = document.createElement("div"); nt.className = "note"; nt.textContent = r.note; entry.append(nt); }
+    li.append(day, entry);
     list.append(li);
   });
   rows.forEach(r => seen.add(r.id));
   firstLoad = false;
 }
 
-function onDelete(id) {
-  if (pendingDel !== id) {
-    pendingDel = id; render();
-    setTimeout(() => { if (pendingDel === id) { pendingDel = null; render(); } }, 4000);
-    return;
+async function loadHistory() {
+  try {
+    const r = await api("history", { token: session.token });
+    if (!r.ok && r.error === "no_session") { signOut("หมดเวลาเข้าสู่ระบบ เข้าสู่ระบบอีกครั้ง"); return; }
+    if (!r.ok) throw new Error(r.error);
+    renderHistory(r.rows || []);
+  } catch (e) {
+    if (firstLoad) {
+      const list = $("list"); list.replaceChildren();
+      const li = document.createElement("li"); li.className = "empty";
+      li.textContent = "โหลดประวัติไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้า";
+      list.append(li);
+    }
   }
-  pendingDel = null; removeLocal(id); rows = loadLocal(); render(); say("ลบรายชื่อแล้ว", "ok");
 }
 
-async function refresh() {
-  try { rows = await fetchRows(); rows.sort((a, b) => (a.at || 0) - (b.at || 0)); render(); }
-  catch (e) { if (firstLoad) { list.replaceChildren(); const li = document.createElement("li"); li.className = "empty"; li.textContent = "โหลดรายชื่อไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้า"; list.append(li); } }
-}
-
-form.addEventListener("submit", async (e) => {
+$("signForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = $("name").value.trim();
   const note = $("note").value.trim();
-  const pin = $("pin").value.trim();
-  if (!name) { say("กรุณาพิมพ์ชื่อก่อนกดลงชื่อ", "err"); $("name").focus(); return; }
-  if (shared && !pin) { say("กรุณาใส่ PIN ก่อนกดลงชื่อ", "err"); $("pin").focus(); return; }
-  btn.disabled = true; say("กำลังบันทึก…");
-  const row = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), name, note, at: Date.now() };
+  const msg = $("signMsg");
+  if (!name) { say(msg, "กรุณาพิมพ์ชื่อก่อนกดลงชื่อ", "err"); $("name").focus(); return; }
+  $("signBtn").disabled = true; say(msg, "กำลังบันทึก…");
   try {
-    await addRow(row, pin);
-    form.reset(); say("ลงชื่อเรียบร้อย ✓ " + name, "ok");
-    await refresh();
+    const r = await api("sign", { token: session.token, name, note });
+    if (!r.ok && r.error === "no_session") { signOut("หมดเวลาเข้าสู่ระบบ เข้าสู่ระบบอีกครั้งแล้วลงชื่อใหม่"); return; }
+    if (!r.ok) throw new Error(r.error);
+    save(NAME_KEY, name);
+    $("note").value = "";
+    say(msg, "ลงชื่อเรียบร้อย ✓ " + timeFmt.format(new Date()) + " น.", "ok");
+    await loadHistory();
   } catch (err) {
-    const code = err && err.code;
-    if (code === "bad_pin") { say("PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง", "err"); $("pin").value = ""; $("pin").focus(); }
-    else if (code === "locked") say("ใส่ PIN ผิดหลายครั้งเกินไป รอประมาณ 10 นาทีแล้วลองใหม่", "err");
-    else if (code === "pin_not_set") say("ยังไม่ได้ตั้ง PIN ติดต่อผู้ดูแล", "err");
-    else say("บันทึกไม่สำเร็จ ลองกดอีกครั้ง", "err");
-  } finally { btn.disabled = false; }
+    say(msg, "บันทึกไม่สำเร็จ ลองกดอีกครั้ง", "err");
+  } finally { $("signBtn").disabled = false; }
 });
 
-if (!shared) {
-  $("pinField").hidden = true;
-  notice.hidden = false;
-  notice.textContent = "รายชื่อเก็บไว้ในเครื่องนี้เท่านั้น ถ้าต้องการให้ทุกเครื่องเห็นรายชื่อเดียวกัน ให้เชื่อมกับ Google Sheets ตามวิธีใน README";
-}
-refresh();
-if (shared) setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
+/* ---------- start ---------- */
+
+try { session = JSON.parse(load(STORE_KEY) || "null"); } catch (e) { session = null; }
+if (session && session.token && session.email) enterApp(); else { session = null; show("email"); }
 </script>
 </body>
 </html>
